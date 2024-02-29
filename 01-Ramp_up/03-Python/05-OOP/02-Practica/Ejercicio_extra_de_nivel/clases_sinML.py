@@ -63,26 +63,33 @@ class Mago(Personaje):
         self.arma = arma
         self.mana = mana + self.nivel*2 + 200 # Cada habilidad tiene un costo en mana para evitar que se use la habilidad mas poderosa, y tengas que usar estrategia
         self.habilidades = {
-            "bola de fuego": {
+            1: {
+                "nombre": "bola de fuego",
                 "daño": 25 + self.nivel*0.1 + daño_base,
                 "mana": -15, 
                 "vida": 0,
                 "armadura": 0,
             },
-            "barrera": {
+            2: {
+                "nombre": "barrera",
                 "daño": 0,
                 "mana": -15, 
                 "vida": 20,
                 "armadura": 50,
             },
-            "bola de hielo": {
+            3: {
+                "nombre": "bola de hielo",
                 "daño": 25 + self.nivel*0.1 + daño_base,
                 "mana": -30, 
                 "vida": 0,
                 "armadura": 0,
             },
-            "recuperar mana": {
-                "mana": 200
+            4: {
+                "nombre": "recuperar mana",
+                "daño": 0,
+                "mana": 200,
+                "vida": 0,
+                "armadura": 0,
             }
         }
         self.armas = ["baston"] # Armas que puede utilizar el personaje
@@ -103,26 +110,33 @@ class Guerrero(Personaje):
         self.daño = self.daño - 30
         self.arma = arma
         self.habilidades = {
-            "embate": {
+            1: {
+                "nombre": "embate",
                 "daño": 35 + self.nivel*0.1 + daño_base,
                 "mana": -15, 
                 "vida": 0,
                 "armadura": 0,
             },
-            "defensa": {
+            2: {
+                "nombre": "defensa",
                 "daño": 0,
                 "mana": -15, 
                 "vida": 20,
                 "armadura": 50,
             },
-            "golpe mortal": {
+            3: {
+                "nombre": "golpe mortal",
                 "daño": 80 + self.nivel*0.1  + daño_base,
                 "mana": -60, 
                 "vida": 0,
                 "armadura": 0,
             },
-            "recuperar mana": {
-                "mana": 200
+            4: {
+                "nombre": "recuperar mana",
+                "daño": 0,
+                "mana": 200,
+                "vida": 0,
+                "armadura": 0,
             }
         }
         self.armas = ["espada", "maza", "hacha"]
@@ -142,26 +156,33 @@ class Acechador(Personaje):
         self.mana = mana + self.nivel*1.5
         self.velocidadAtaque = self.velocidadAtaque + 200
         self.habilidades = {
-            "puñalada": {
+            1: {
+                "nombre": "puñalada",
                 "daño": 20 + self.nivel*0.1  + daño_base,
                 "mana": -15, 
                 "vida": 0,
                 "armadura": 0,
             },
-            "esfumar": {
+            2: {
+                "nombre": "esfumar",
                 "daño": 0,
                 "mana": -100, 
                 "vida": 200,
                 "armadura": 0,
             },
-            "afilar": {
+            3: {
+                "nombre": "afilar",
                 "daño": 0 + self.nivel*0.1 + daño_base,
                 "mana": -40, 
                 "vida": 0,
                 "armadura": 0,
             },
-            "recuperar mana": {
-                "mana": 200
+            4: {
+                "nombre": "recuperar mana",
+                "daño": 0,
+                "mana": 200,
+                "vida": 0,
+                "armadura": 0,
             }
         }
         self.armas = ["daga"] 
@@ -325,18 +346,17 @@ def lucha(personaje, monstruo, arma): # Logica del combate
         Monstruo:    {monstruo.vida, monstruo.velocidad, monstruo.daño}
         Arma:    {arma.daño, arma.velocidad}\n
     """)
-    
-    empezar = input("Pulse cualquier tecla para empezar el combate")
-    if empezar is not None:
-        continuar = True
-        while continuar:
+    continuar = True
+    while continuar:    
+        empezar = input("Pulse cualquier tecla para empezar el combate")
+        if empezar is not None:
             turno = seleccionar_turno(personaje.velocidadAtaque + arma.velocidad, monstruo.velocidad) 
             if turno == "tu":
                 continuar = turno_personaje(personaje, monstruo, arma)
             else:
                 continuar = turno_monstruo(personaje, monstruo)
-    else:
-        lucha(personaje, monstruo, arma)
+        else:
+            lucha(personaje, monstruo, arma)
 
 
 def seleccionar_turno(velocidad_personaje, velocidad_monstuo):
@@ -360,26 +380,17 @@ def turno_monstruo(personaje, monstruo):
     personaje.vida -= ataque
     if vida_personaje < 0:
         print(f"\nEl ataque de {ataque} puntos de daño de {monstruo.nombre} te afecto dejandote sin vida")
-        continuar = False
-        return continuar
+        return False
     else:
         print(f"\nEl ataque de {ataque} puntos de daño de {monstruo.nombre} te afecto dejandote con {vida_personaje} puntos vida")
-        continuar = True
-        return continuar
+        return True
 
 
 def turno_personaje(personaje, monstruo, arma):
-    ataque = personaje.daño + arma.daño
-    vida_monstruo = monstruo.vida - ataque
-    monstruo.vida -= ataque
-    if vida_monstruo < 0:
-        print(f"\nSu ataque de {ataque} de daño afecto a {monstruo.nombre} matandolo completamente y ganando el combate")
-        continuar = False
-        return continuar
-    else:
-        print(f"\nSu ataque de {ataque} de daño afecto a {monstruo.nombre} dejandole con {monstruo.vida}")
-        continuar = True
-        return continuar
+    print("\nHabilidades disponibles:\n")
+    habilidades = personaje.habilidades
+    for clave, valor in habilidades.items():
+        print(f"  {clave}. {valor["nombre"]}:  mana: {valor["mana"]} | daño: {valor["daño"]} | vida: {valor["vida"]} | armadura: {valor["armadura"]}")
 
 #print(f"""
      #   Personaje:     {personaje.vida, personaje.daño, personaje.velocidadAtaque, personaje.armadura, personaje.mana, personaje.nivel}
