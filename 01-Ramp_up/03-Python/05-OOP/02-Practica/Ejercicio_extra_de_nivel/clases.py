@@ -1,4 +1,23 @@
-# Mi juego: crea una clase armas y una clase monstruo, crea funciones que interaccionen entre ellos, crea personajes que solo puedan usar unas determinadas armas
+"""
+¿Como funciona el codigo?
+Basicamente existen unas clases que son los personajes, los monstruos y las armas, no hacer especial caso en los detalles de las clases debido a
+que muchos no se han usado debido a la simplificacion para crear el modelo de ML.
+Basicamente los personajes tienen 200 puntos repartidos en daño, velocidad y armadura; tienen 3 clases (Mago, guerrero o acechador), cada clase potenciara
+algo de sus atributos (por ejemplo, un guerrero tendra mas vida y armadura de base), dichos personajes deberan escoger un arma que corresponda con su clase
+(por ejemplo: los magos solo pueden usar bastones), y pelearan con un monstruo que tendra vida, daño y velocidad; tanto monstruos como arnas
+estan creadas de forma predeterminada, solo los personajes seran creados de forma aleatoria, se seleccionara un arma aleatoria (de las que pueda usar cada clase)
+y se luchara contra un monstruo que sera seleccionado de la lista y que asignaremos como parametro en una funcion del ML, es decir,
+el monstruo contra el que se combate no sera asignado de forma aleatoria.
+
+Una vez se haya creado todo se dara lugar al combate que sera un sistema de turnos aleatorios donde quien tenga mas velocidad tendra mas
+probabilidad de ser elegido en el turno, se hara un bucle llamando a la funcion de turnos hasta que uno de los dos muera (el personaje o el monstruo),
+una vez esto ocurra, la funcion final (la funcion lucha()), devolvera como parametro un diccionario con toda la informacion de todos los elementos del combate, 
+para su posterior estudio en el archivo .py demonimado ML.py .
+
+El arma elegida potencia al personaje, y el personaje luchara contra el monstruo sin habilidades, es decir el monstruo solo recibira el daño
+que el personaje tenga como propiedad, las habilidades no se han utilizado en este modelo.
+"""
+
 
 import random
 
@@ -100,7 +119,6 @@ class Guerrero(Personaje):
         self.mana = mana + self.nivel*1.5
         self.armadura = self.armadura + 500
         self.vida = self.vida + 100
-        self.daño = self.daño - 30
         self.arma = arma
         self.habilidades = {
             "embate": {
@@ -221,7 +239,7 @@ class Monstruos:
 # -------------------Elementos creados para el juego, monstruos y armas--------------------
 
 cthulhu = Monstruos(nombre="cthulhu", dificultad="dificil", vida= 1000, experiencia= 10, velocidad= 30, daño=30)
-Leon_de_Amenea = Monstruos(nombre="Leon de Amenea", dificultad="media", vida= 30, experiencia= 7, velocidad= 20, daño=10)
+Leon_de_Amenea = Monstruos(nombre="Leon de Amenea", dificultad="media", vida= 300, experiencia= 7, velocidad= 20, daño=10)
 Minotauro = Monstruos(nombre="Minotauro", dificultad="dificil", vida= 2000, experiencia= 50, velocidad= 30, daño=30)
 
 lista_de_monstruos = [cthulhu, Leon_de_Amenea, Minotauro]
@@ -238,108 +256,107 @@ lista_de_armas = [Baston_de_Gandalf, Excalibur, Mjölnir, Tizona, Fragarach]
 
 # ----------------------Creacion de Personajes-------------------, he intentado separar la funcion crear_personake() en 3 funciones pero da muchos errores con la herencia (complica las cosas innecesariamente a pesar de ser una buena practica)
 
-def crear_personaje(lista_personajes): # Caracteristicas base del personaje
+def crear_personaje(id): # el id sera un numero identificativo en el nombre
     try:
-        print("Reparta sus puntos entre daño, velocidad, armadura o velocidad, tiene 200 puntos, repartalo sabiamente ")
-        puntos_totales = 200
-        nombre_personaje = input("Ingrese el nombre del personaje: ")
-        daño_personaje = int(input(f"Ingrese la fuerza del personaje (puntos totales: {puntos_totales}): "))
-        puntos_totales -= daño_personaje
-        velocidad_personaje = int(input(f"Ingrese la velocidad del personaje(puntos totales: {puntos_totales}): "))
-        puntos_totales -= velocidad_personaje
-        armadura_personaje = int(input(f"Ingrese la armadura de su personaje(puntos totales: {puntos_totales}): "))
-        puntos_totales -= armadura_personaje
-        if puntos_totales < 0:
-            print("Introdujo mas puntos de los que tiene, repita el proceso")
-            crear_personaje(lista_personajes)
+        nombre_personaje = f'personaje{id}'
+        daño_personaje = random.randint(1, 200) #El daño, la velocidad y la armadura tendran 200 puntos que se repartiran de forma aleatoria
+        if daño_personaje == 200:
+            velocidad_personaje = 0
+            armadura_personaje = 0
+        else:
+            velocidad_personaje = random.randint(0, 200 - daño_personaje)
+            armadura_personaje = 200 - daño_personaje - velocidad_personaje
+        puntos_totales = 200 - daño_personaje - velocidad_personaje - armadura_personaje
+        if puntos_totales < 0: # Por si acaso, aunque es imposible que entre aqui
+            crear_personaje(id)
         else: # Para este else podria haber hecho otra funcion pero las he tenido que unir porque daba demasiados errores
-            print("""\nClases disponibles:\n
-                1. Guerrero: Menos velocidad de ataque, ataque medio y mas aguante, puede usar espadas, hachas o mazas
-                2. Mago: poco aguante y poca velocidad de ataque, mucho daño, solo puede usar bastones
-                3. Acechador: daño y aguante medios, velocidad de ataque muy alta, solo puede usar dagas      
-            """)
-            seleccion = input("\nSeleccione su clase: ") # Segundo paso para la creacion de personaje
-            if seleccion == "1":
-                personaje = Guerrero(vida=250, daño_base=100, velocidad_de_ataque=30, armadura=200, nombre=nombre_personaje)
-            elif seleccion == "2":
-                personaje = Mago(vida=100, daño_base=500, velocidad_de_ataque=10, armadura=20, nombre=nombre_personaje)
-            elif seleccion == "3":
-                personaje = Acechador(vida=200, daño_base=120, velocidad_de_ataque=100, armadura=80, nombre=nombre_personaje)
-            else:
-                print("\nIntrodujo algo mal, recuerda que debes seleccionar el indice que acompañe a la opcion que quiera seleccionar")
-                crear_personaje(lista_personajes)
-        
-        lista_personajes.append(personaje) # Este es el final de la funcion, no es necesario un return
-        print("\nSe creo su personaje correctamente")
+            seleccion = random.choices([1, 2, 3])[0] # El cero es necesario porque random.choices siempre devuelve una lista con un elemento
+            if seleccion == 1:
+                personaje = Guerrero(vida=250, daño_base=daño_personaje, velocidad_de_ataque=velocidad_personaje, armadura=armadura_personaje, nombre=nombre_personaje)
+            elif seleccion == 2:
+                personaje = Mago(vida=100, daño_base=daño_personaje, velocidad_de_ataque=velocidad_personaje, armadura=armadura_personaje, nombre=nombre_personaje)
+            elif seleccion == 3:
+                personaje = Acechador(vida=200, daño_base=daño_personaje, velocidad_de_ataque=velocidad_personaje, armadura=armadura_personaje, nombre=nombre_personaje)
+        return personaje
+    # en cada personaje las caracteristicas escalaran de forma diferente
     except:
-        print("\nSolo puede introducir numeros enteros en las caracteristicas de su personaje\n")
-        crear_personaje(lista_personajes)
-
-# ----------------------Mostrar personajes-------------------
-
-def mostrar_personajes(lista_personajes):
-    for i, j in enumerate(lista_personajes):
-        print(f"{i + 1}. {j}")
+        crear_personaje(id)
 
 # ----------------------funciones de lucha-------------------
 
 def seleccionar_arma(lista_de_armas, personaje_seleccionado): # El arma da demasiados problemas, dejarla como un objeto no anidado a la clase y pasarlo como parametro a la funcion lucha
-    print("\n\nArmas disponibles: \n")
-    for a, b in enumerate(lista_de_armas):
-        print(f"{a + 1}. {b}")
-    decision_arma = int(input(f"\nSeleccione el arma con el que quiere combatir: ")) - 1
-    arma_seleccionada = lista_de_armas[decision_arma]
-    if arma_seleccionada.tipo in personaje_seleccionado.armas: 
-        return arma_seleccionada
-    else:
-        print(f"\nComo {personaje_seleccionado.clase} solo puede usar {[x for x in personaje_seleccionado.armas]} \n")
-        seleccionar_arma(lista_de_armas, personaje_seleccionado)
+    while True:
+        decision_arma = random.choices([1, 2, 3, 4, 5])[0] - 1
+        arma_seleccionada = lista_de_armas[decision_arma] # las listas tanto de armas como de monstruos, estan ya creadas en esste mismo archivo
+        if arma_seleccionada.tipo in personaje_seleccionado.armas: # solo puede elegir un arma que permita su clase usar (ejemplo: si es mago solo puede usar baston, si es acechador solo dagas y si es guerrero, mazas, espadas o hachas) 
+            break # Esta es la unica forma de resolver el problema con el NoneType, obligar a que el arma seleccionada sea correcta una vez terminado el while
+    return arma_seleccionada 
 
-def seleccion_de_batalla(lista_personajes, lista_de_monstruos, lista_de_armas): # seleccionamos monstruo personaje y arma para luchar
-    print("\n\nMonstruos disponibles: \n")
-    for i, j in enumerate(lista_de_monstruos): # Los bucles muestran la lista de todos los elementos y lgo seleccionamos su indice
-        print(f"{i + 1}. {j}")
-    try: # Usamos este try para usar bien los indices con los ints para posteriormente usarlos como int dentro de los indices de las listas
-        decision_monstruo = int(input("\nSeleccione un monstruo para combatir: ")) - 1
-        monstruo_seleccionado = lista_de_monstruos[decision_monstruo] # Al seleccionar el indice lgo con ese mismo indice podemos escoger el elemento que queramos dentro de la lista
-        
-        print("\n\nPersonajes disponibles: \n")
-        for k, h in enumerate(lista_personajes):
-            print(f"{k + 1}. {h}")
-        decision_personaje = int(input(f"\nSeleccione el personaje con el que quiere combatir: ")) - 1
-        personaje_seleccionado = lista_personajes[decision_personaje]
+def seleccion_de_batalla(personaje, monstruo, lista_armas = lista_de_armas): # seleccionamos monstruo personaje y arma para luchar
+    # Es necesario instaciar los monstruos aqui para que al hacer la recopilacion de datos se reinnicien sus vidas
+    # En cambio con las armas no es necesario porque no cambian ninguna propiedad
+    cthulhu = Monstruos(nombre="cthulhu", dificultad="dificil", vida= 1000, experiencia= 10, velocidad= 30, daño=30)
+    Leon_de_Amenea = Monstruos(nombre="Leon de Amenea", dificultad="media", vida= 300, experiencia= 7, velocidad= 20, daño=10)
+    Minotauro = Monstruos(nombre="Minotauro", dificultad="dificil", vida= 2000, experiencia= 50, velocidad= 30, daño=200)
 
-        arma = seleccionar_arma(lista_de_armas, personaje_seleccionado)
-        print(arma.nombre)
+    lista_de_monstruos = [cthulhu, Leon_de_Amenea, Minotauro]
+    
+    try:
+        monstruo_seleccionado = lista_de_monstruos[monstruo] # por parametro tendra que recibir un entero que funcionara como indice en la lista de monstruos ya creada arriba
+        arma = seleccionar_arma(lista_armas, personaje)
+        batalla = lucha(personaje, monstruo_seleccionado, arma)
+        return batalla
     except:
-        print("\nIntrodujo algo incorrectamente")
-        seleccion_de_batalla(lista_personajes, lista_de_monstruos, lista_de_armas)
-    lucha(personaje_seleccionado, monstruo_seleccionado, arma)
+        seleccion_de_batalla(lista_personajes, monstruo, lista_de_monstruos, lista_de_armas)
 
 def lucha(personaje, monstruo, arma): # Logica del combate
-    print(f"\n\nEmpezo la lucha, usted combatira con {personaje.nombre} a {monstruo.nombre} con {arma.nombre}\n")
-    print("Cada vez que pulse una tecla, se dara paso a los turnos, quien tenga mas velocidad de ataque tendra mas posibilidad de que le toque atacar")
-    
-    print(f"""\n
-        Personaje:     {personaje.vida, personaje.daño, personaje.velocidadAtaque, personaje.armadura, personaje.mana, personaje.nivel}
-        Monstruo:    {monstruo.vida, monstruo.velocidad, monstruo.daño}
-        Arma:    {arma.daño, arma.velocidad}\n
-    """)
-    
-    empezar = input("Pulse cualquier tecla para empezar el combate")
-    if empezar is not None:
-        continuar = True
-        while continuar:
-            turno = seleccionar_turno(personaje.velocidadAtaque + arma.velocidad, monstruo.velocidad) 
-            if turno == "tu":
-                continuar = turno_personaje(personaje, monstruo, arma)
-            else:
-                continuar = turno_monstruo(personaje, monstruo)
-    else:
-        lucha(personaje, monstruo, arma)
+    dicc_resultados = { # asignamos esto aqui porque cuando empiece el combate (el bucle while de abajo) los atributos del personaje y del monstruo van a cambiar
+        "personaje": {
+            "nombre": personaje.nombre,
+            "daño": personaje.daño,
+            "armadura": personaje.armadura,
+            "velocidad": personaje.velocidadAtaque,
+            "vida": personaje.vida,
+            "clase": personaje.clase,
+            "Arma usada": arma.nombre,
+            "Monstruo combatido": monstruo.nombre,
+            "victorias": 0 # Esta clave nos ayudara a analizar el ratio de victorias
+        },
+        "monstruo": {
+            "nombre": monstruo.nombre,
+            "daño": monstruo.daño,
+            "vida": monstruo.vida,
+            "velocidad": monstruo.velocidad,
+        },
+        "arma usada": {
+            "nombre": arma.nombre,
+            "daño": arma.daño,
+            "velocidad": arma.velocidad,
+            "tipo": arma.tipo
+        }
+    }  #Aqui estara toda la informacion para posteriormente analizarla en el modelo
+    turnos_personaje = 0
+    turnos_monstruo = 0
+    continuar = True
+    while continuar: # El bucle terminara cuando uno de los dos (tu o el monstruo) se quede sin vida, en ese momento continuar = info[1] = False
+        turno = seleccionar_turno(personaje.velocidadAtaque + arma.velocidad, monstruo.velocidad) # selecciona de forma aleatoria a quien le toca
+        if turno == "tu": # si turno_personaje() ha devuelto "tu", ser tu turno en el que ataques y el monstruo reciba daño
+            info = turno_personaje(personaje, monstruo, arma)
+            continuar = info[1] # innfo es una lista donde estara el ganador, en caso de haber terminado el combate y un boleano que determina si alguno de los elementos (el monstruo o tu) sigue con una vida superior a 0 puntos
+            turnos_personaje += 1
+        else:
+            info = turno_monstruo(personaje, monstruo) # turno_monstruo retorna una lista donde el primer elemento es un true o in false para ver si se ha terminado el combate o no
+            continuar = info[1] 
+            turnos_monstruo += 1
+
+    dicc_resultados["ganador"] = info[0]
+      # cuando termine el bucle asignaremos la variable ganador dentro de la informacion
+    dicc_resultados["personaje"]["turnos"] = turnos_personaje
+    dicc_resultados["monstruo"]["turnos"] = turnos_monstruo # turnos usados de cada entidad, ns si lo necesitaremos para el modelo pero siempre esta bien tener esta informacion
+    return dicc_resultados
 
 
-def seleccionar_turno(velocidad_personaje, velocidad_monstuo):
+def seleccionar_turno(velocidad_personaje, velocidad_monstuo): # a pesar de ser aleatoria la eleccion cuanto mas velocidad tengas mas probabilidad tienes de que salte tu turno
     diff = abs(velocidad_monstuo - velocidad_personaje)
     probabilidad_base = 1/(diff + 1)
 
@@ -350,75 +367,40 @@ def seleccionar_turno(velocidad_personaje, velocidad_monstuo):
     probabilidad_personaje /= total_probabilidad
     probabilidad_monstruo /= total_probabilidad
     
-    seleccion_de_turno = random.choices(["tu", "monstruo"], weights=[probabilidad_personaje, probabilidad_monstruo])[0]
+    seleccion_de_turno = random.choices(["tu", "monstruo"], weights=[probabilidad_personaje, probabilidad_monstruo])[0] # El 0 es necesario porque devuelve una lista con un elemento
     
-    return seleccion_de_turno
+    return seleccion_de_turno # devolvera "tu" o "monstruo"
 
-def turno_monstruo(personaje, monstruo):
+def turno_monstruo(personaje, monstruo): # si ha salido esta funcion es porque es el turno del monstruo (el monstruo ataca y tu recibes daño)
     ataque = monstruo.daño
     vida_personaje = personaje.vida - ataque
     personaje.vida -= ataque
-    if vida_personaje < 0:
-        print(f"\nEl ataque de {ataque} puntos de daño de {monstruo.nombre} te afecto dejandote sin vida")
+    if vida_personaje < 0: # entra aqui si el monstruo te ha matado
+        #print(f"\nEl ataque de {ataque} puntos de daño de {monstruo.nombre} te afecto dejandote sin vida") # Esto no lo he querido borrar por si en algun momento interesa conocer el combate turno por turno
         continuar = False
-        return continuar
+        ganador = "monstruo"
+        info = [ganador, continuar]
+        return info
     else:
-        print(f"\nEl ataque de {ataque} puntos de daño de {monstruo.nombre} te afecto dejandote con {vida_personaje} puntos vida")
+        #print(f"\nEl ataque de {ataque} puntos de daño de {monstruo.nombre} te afecto dejandote con {vida_personaje} puntos vida")
         continuar = True
-        return continuar
+        ganador = "nadie" # Este valor es indiferente porque siempre que continuar sea true, la variable ganador no quedara asignada porque el bucle de la funcion lucha() no habra terminado, tiene el valor "nadie" solo para evitar errores de codigo
+        info = [ganador, continuar]
+        return info 
 
-
-def turno_personaje(personaje, monstruo, arma):
+def turno_personaje(personaje, monstruo, arma): # Aqui entras si ha saltado "tu" en la seleccion de turno, tu haces daño y el monstruo recibe, tambien interactua el arma que tengas
     ataque = personaje.daño + arma.daño
     vida_monstruo = monstruo.vida - ataque
     monstruo.vida -= ataque
     if vida_monstruo < 0:
-        print(f"\nSu ataque de {ataque} de daño afecto a {monstruo.nombre} matandolo completamente y ganando el combate")
+        #print(f"\nSu ataque de {ataque} de daño afecto a {monstruo.nombre} matandolo completamente y ganando el combate")
         continuar = False
-        return continuar
+        ganador = "personaje"
+        info = [ganador, continuar]
+        return info
     else:
-        print(f"\nSu ataque de {ataque} de daño afecto a {monstruo.nombre} dejandole con {monstruo.vida}")
+        #print(f"\nSu ataque de {ataque} de daño afecto a {monstruo.nombre} dejandole con {monstruo.vida}") # Esto no lo he querido borrar por si en algun momento interesa conocer el combate turno por turno
         continuar = True
-        return continuar
-
-#print(f"""
-     #   Personaje:     {personaje.vida, personaje.daño, personaje.velocidadAtaque, personaje.armadura, personaje.mana, personaje.nivel}
-      #  Monstruo:    {monstruo.vida, monstruo.velocidad, monstruo.daño}
-       # Arma:    {arma.daño, arma.velocidad}
-    #""")
-
-# ----------------------Funcion de juego-------------------
-
-def jugar():
-    print("Bienvenido al juego de los monstruos")
-
-    juego = True
-    while juego:
-        if len(lista_personajes) == 0: # Si no tenemos Ningun personaje el juego nos obligara a crearnos uno para poder seguir jugando
-            print("\nAntes de seguir jugando tienes que tener al menos un personaje creado")
-            print("\n---1. Crear personaje---")
-            crear_personaje(lista_personajes)
-        else:
-            print("""\n\n
-                1. Crear personaje
-                2. Mostrar personajes
-                3. Luchar!!!!!
-                4. Salir        
-            """)
-            decision = input("¿Que quiere hacer ahora (Introduzca el numero que acompaña a la opcion para seleccionarla)?\n\n\n")
-
-            if decision == "1":
-                crear_personaje(lista_personajes)
-            elif decision == "2":
-                mostrar_personajes(lista_personajes)
-            elif decision == "3":
-                seleccion_de_batalla(lista_personajes, lista_de_monstruos, lista_de_armas)
-            elif decision == "4":
-                juego = False
-            else:
-                print("\nIntrodujo una opcion que no es valida, recuerde que tiene que introducir, 1, 2, 3, o 4 si quiere abandonar")
-
-
-# Jugar
-
-jugar()
+        ganador = "nadie"
+        info = [ganador, continuar]
+        return info
